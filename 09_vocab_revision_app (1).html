@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabMaster VE2B - Managed Vocab Revision</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for game wins -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* 3D Flip Card Effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Pulse wave animation for speech recording */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased bg-slate-50 selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Title / Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                        <i data-lucide="book-open-check" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
+                            VocabMaster <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold">VE2B List 1</span>
+                        </h1>
+                        <p class="text-xs text-slate-500 font-medium hidden sm:block">Step-by-Step Micro-Learning & Speech Lab</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex items-center space-x-1 bg-slate-100 p-1.5 rounded-xl text-sm font-semibold">
+                    <button id="nav-flashcards" onclick="switchTab('flashcards')" class="nav-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all bg-white text-indigo-600 shadow-sm">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                        Flashcards
+                    </button>
+                    <button id="nav-quiz" onclick="switchTab('quiz')" class="nav-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/60">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        Quiz
+                    </button>
+                    <button id="nav-speech" onclick="switchTab('speech')" class="nav-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/60">
+                        <i data-lucide="mic" class="w-4 h-4"></i>
+                        Pronunciation Lab
+                    </button>
+                    <button id="nav-match" onclick="switchTab('match')" class="nav-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/60">
+                        <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                        Matching Game
+                    </button>
+                    <button id="nav-library" onclick="switchTab('library')" class="nav-btn flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/60">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                        Full Word List
+                    </button>
+                </nav>
+
+                <!-- Audio Settings & Stats -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200">
+                        <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Mastered: <span id="mastered-count">0</span>/<span id="total-words-count">188</span></span>
+                    </div>
+
+                    <button onclick="toggleVoiceAccent()" id="voice-accent-btn" title="Toggle Pronunciation Accent" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition border border-slate-200 text-xs font-bold flex items-center gap-1">
+                        <span id="accent-flag">🇺🇸</span>
+                        <span id="accent-label" class="hidden sm:inline">US Accent</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Navigation -->
+        <div class="md:hidden flex justify-around bg-white border-t border-slate-200 py-2 px-1 text-xs font-medium text-slate-600">
+            <button onclick="switchTab('flashcards')" class="mobile-nav-btn flex flex-col items-center gap-1 text-indigo-600" id="mob-flashcards">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                Cards
+            </button>
+            <button onclick="switchTab('quiz')" class="mobile-nav-btn flex flex-col items-center gap-1" id="mob-quiz">
+                <i data-lucide="help-circle" class="w-5 h-5"></i>
+                Quiz
+            </button>
+            <button onclick="switchTab('speech')" class="mobile-nav-btn flex flex-col items-center gap-1" id="mob-speech">
+                <i data-lucide="mic" class="w-5 h-5"></i>
+                Speak
+            </button>
+            <button onclick="switchTab('match')" class="mobile-nav-btn flex flex-col items-center gap-1" id="mob-match">
+                <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+                Game
+            </button>
+            <button onclick="switchTab('library')" class="mobile-nav-btn flex flex-col items-center gap-1" id="mob-library">
+                <i data-lucide="list" class="w-5 h-5"></i>
+                List
+            </button>
+        </div>
+    </header>
+
+    <section class="bg-white border-b border-slate-200 py-3 shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+            
+            <!-- Category & Micro-pack selector -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full md:w-auto scrollbar-none">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+                        <i data-lucide="filter" class="w-3.5 h-3.5"></i> Category:
+                    </span>
+                    
+                    <button onclick="filterByPOS('ALL')" class="pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm" data-pos="ALL">
+                        All (<span id="count-all">188</span>)
+                    </button>
+                    <button onclick="filterByPOS('Noun')" class="pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600" data-pos="Noun">
+                        🔹 Nouns (<span id="count-noun">105</span>)
+                    </button>
+                    <button onclick="filterByPOS('Adjective')" class="pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-600" data-pos="Adjective">
+                        💜 Adjectives (<span id="count-adj">57</span>)
+                    </button>
+                    <button onclick="filterByPOS('Verb')" class="pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600" data-pos="Verb">
+                        🟢 Verbs (<span id="count-verb">23</span>)
+                    </button>
+                    <button onclick="filterByPOS('Adverb')" class="pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-600" data-pos="Adverb">
+                        📙 Adverbs (<span id="count-adv">3</span>)
+                    </button>
+                </div>
+
+                <!-- Global Search Box -->
+                <div class="relative w-full md:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Search word or Chinese..." class="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+            </div>
+
+            <!-- Manageability Controls: Pack Sub-Selector & Practice Filter -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100">
+                <div class="flex items-center gap-2 text-xs font-semibold">
+                    <span class="text-indigo-900 font-bold flex items-center gap-1">
+                        <i data-lucide="package" class="w-4 h-4 text-indigo-600"></i> Manageable Pack:
+                    </span>
+                    <select id="pack-selector" onchange="handlePackChange(this.value)" class="bg-white border border-indigo-200 text-indigo-900 text-xs font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="ALL">Full Deck (All Words)</option>
+                        <option value="DAILY10">🌟 Daily 10 Challenge (10 Words)</option>
+                        <option value="PACK1">Pack 1 (Words 1 - 15)</option>
+                        <option value="PACK2">Pack 2 (Words 16 - 30)</option>
+                        <option value="PACK3">Pack 3 (Words 31 - 45)</option>
+                        <option value="PACK4">Pack 4 (Words 46 - 60)</option>
+                        <option value="PACK5">Pack 5 (Words 61 - 75)</option>
+                        <option value="PACK6">Pack 6 (Words 76 - 90)</option>
+                        <option value="PACK7">Pack 7 (Words 91 - 105+)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 select-none">
+                        <input type="checkbox" id="unmastered-only-checkbox" onchange="toggleUnmasteredOnly(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                        <span>Show Unmastered Only</span>
+                    </label>
+
+                    <div class="text-slate-500 font-medium border-l border-indigo-200 pl-3">
+                        Active Pool: <span id="active-pool-count" class="font-extrabold text-indigo-600">188</span> words
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- VIEW 1: FLASHCARDS -->
+        <section id="view-flashcards" class="view-panel space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <span>Interactive Flashcards</span>
+                        <span id="pos-badge-indicator" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold">Category: All</span>
+                    </h2>
+                    <p class="text-xs text-slate-500">Click card to flip and learn meaning, phonetics, Chinese translation and example.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                    <span id="card-counter">Card 1 of 188</span>
+                </div>
+            </div>
+
+            <!-- Card Flip Area -->
+            <div class="max-w-xl mx-auto">
+                <div id="flashcard-box" onclick="flipCard()" class="perspective-1000 cursor-pointer h-80 sm:h-96 w-full select-none">
+                    <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-3xl border border-slate-200 bg-white">
+                        
+                        <!-- CARD FRONT -->
+                        <div class="absolute inset-0 w-full h-full rounded-3xl bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 p-8 flex flex-col justify-between backface-hidden border-2 border-indigo-100/80">
+                            <div class="flex justify-between items-start">
+                                <span id="card-pos-front" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                    Noun
+                                </span>
+                                <button onclick="event.stopPropagation(); speakCurrentWord();" class="p-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full transition shadow-sm border border-indigo-100" title="Listen Pronunciation">
+                                    <i data-lucide="volume-2" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+
+                            <div class="text-center my-auto">
+                                <h3 id="card-word-front" class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                                    activity
+                                </h3>
+                                <p id="card-phonetic-front" class="text-sm font-mono text-indigo-600 font-semibold bg-indigo-50/80 inline-block px-3 py-1 rounded-lg">
+                                    /ækˈtɪvəti/
+                                </p>
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-100 pt-3">
+                                <span class="flex items-center gap-1"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Click anywhere to flip</span>
+                                <span id="card-mastery-tag" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">Need Practice</span>
+                            </div>
+                        </div>
+
+                        <!-- CARD BACK -->
+                        <div class="absolute inset-0 w-full h-full rounded-3xl bg-slate-900 text-white p-8 flex flex-col justify-between backface-hidden rotate-y-180 border-2 border-slate-800 shadow-2xl">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                                <span id="card-pos-back" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                    Noun
+                                </span>
+                                <button onclick="event.stopPropagation(); speakCurrentWord();" class="p-2 hover:bg-slate-800 text-slate-300 rounded-lg transition" title="Play Sound">
+                                    <i data-lucide="volume-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+
+                            <div class="my-auto space-y-4">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Definition & Chinese Meaning</span>
+                                    <p id="card-definition-back" class="text-base sm:text-lg font-bold text-indigo-100 leading-snug">
+                                        A condition in which things are happening or being done.
+                                    </p>
+                                    <p id="card-chinese-back" class="text-base text-amber-300 font-bold mt-1">
+                                        活動
+                                    </p>
+                                </div>
+
+                                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block mb-1">Example Sentence</span>
+                                    <p id="card-example-back" class="text-xs sm:text-sm text-slate-200 italic leading-relaxed">
+                                        "The school organised an outdoor activity for students."
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-3">
+                                <span>Click again to flip back</span>
+                                <span class="text-[11px] text-indigo-300 font-semibold">VE2B Vocab List 1</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Flashcard Controls -->
+                <div class="flex items-center justify-between mt-6 gap-3">
+                    <button onclick="prevCard()" class="px-4 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 shadow-sm flex items-center gap-1.5 transition">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="markCurrentMastery(false)" id="btn-need-practice" class="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl font-bold text-xs flex items-center gap-1 transition">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i> Need Practice
+                        </button>
+                        <button onclick="markCurrentMastery(true)" id="btn-mastered" class="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl font-bold text-xs flex items-center gap-1 transition">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Mastered
+                        </button>
+                    </div>
+
+                    <button onclick="nextCard()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-200 flex items-center gap-1.5 transition">
+                        Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: QUIZ MODE -->
+        <section id="view-quiz" class="view-panel hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-3xl mx-auto">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <span>Part of Speech & Meaning Quiz</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Test your recall on the current active pack.</p>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Score</div>
+                        <div class="text-2xl font-black text-indigo-600"><span id="quiz-score">0</span> pts</div>
+                    </div>
+                </div>
+
+                <!-- Quiz Card Box -->
+                <div id="quiz-question-container" class="space-y-6">
+                    <div class="bg-indigo-50/60 p-5 rounded-xl border border-indigo-100 text-center relative">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-widest">Vocabulary Check</span>
+                            <button onclick="speakQuizWord()" class="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg transition" title="Pronounce">
+                                <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">What is the correct English word or Chinese translation for:</p>
+                        <h3 id="quiz-question-text" class="text-lg sm:text-2xl font-extrabold text-slate-800 leading-snug">
+                            "活動"
+                        </h3>
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Dynamic Buttons rendered via JS -->
+                    </div>
+
+                    <!-- Explanation Box -->
+                    <div id="quiz-explanation" class="hidden p-4 rounded-xl text-xs font-semibold border"></div>
+
+                    <!-- Next Question Action -->
+                    <div class="flex justify-end border-t border-slate-100 pt-4">
+                        <button id="btn-next-quiz" onclick="generateQuizQuestion()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                            Next Question <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: PRONUNCIATION & SPEAKING LAB -->
+        <section id="view-speech" class="view-panel hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-3xl mx-auto space-y-6">
+                <div class="border-b border-slate-100 pb-4">
+                    <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="mic" class="w-6 h-6 text-indigo-600"></i>
+                        <span>Pronunciation & Speech Lab</span>
+                    </h2>
+                    <p class="text-xs text-slate-500">Listen to standard English pronunciation and test your speaking accuracy!</p>
+                </div>
+
+                <!-- Active Speech Card -->
+                <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-6 sm:p-8 text-center space-y-5 shadow-xl relative overflow-hidden">
+                    <div class="flex justify-between items-center text-xs text-indigo-300 font-bold uppercase tracking-wider">
+                        <span id="speech-pos-badge" class="px-3 py-1 bg-indigo-500/20 rounded-full border border-indigo-400/30">Noun</span>
+                        <span id="speech-word-index">Word 1 of 188</span>
+                    </div>
+
+                    <div>
+                        <h3 id="speech-target-word" class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-2">
+                            activity
+                        </h3>
+                        <p id="speech-phonetic" class="text-base font-mono text-indigo-300 bg-indigo-900/50 inline-block px-4 py-1 rounded-xl border border-indigo-700/50">
+                            /ækˈtɪvəti/
+                        </p>
+                    </div>
+
+                    <p id="speech-meaning" class="text-xs sm:text-sm text-slate-300 font-medium max-w-md mx-auto">
+                        A condition in which things are happening. (活動)
+                    </p>
+
+                    <!-- Listen & Record Action Buttons -->
+                    <div class="flex items-center justify-center gap-4 pt-2">
+                        <button onclick="speakTargetWord()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 transition transform active:scale-95">
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            Listen Audio
+                        </button>
+
+                        <button id="record-btn" onclick="toggleRecording()" class="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 transition transform active:scale-95">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                            <span id="record-btn-text">Speak Now</span>
+                        </button>
+                    </div>
+
+                    <!-- Voice Feedback Container -->
+                    <div id="speech-feedback-box" class="hidden mt-4 p-4 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-left space-y-2">
+                        <div class="flex justify-between items-center font-bold">
+                            <span class="text-slate-300">Speech Analysis:</span>
+                            <span id="speech-accuracy-badge" class="px-2 py-0.5 rounded text-[10px]">Match</span>
+                        </div>
+                        <p class="text-slate-300">You said: <span id="speech-transcription" class="font-bold text-amber-300">"..."</span></p>
+                        <p id="speech-result-msg" class="text-slate-400 italic"></p>
+                    </div>
+                </div>
+
+                <!-- Bottom Selector -->
+                <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <button onclick="prevSpeechWord()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1 transition">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev Word
+                    </button>
+                    <button onclick="nextSpeechWord()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1 transition">
+                        Next Word <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: MATCHING GAME -->
+        <section id="view-match" class="view-panel hidden space-y-6">
+            <div class="max-w-4xl mx-auto space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="gamepad-2" class="w-5 h-5 text-indigo-600"></i>
+                            <span>Vocab Match Challenge</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Match English words to Chinese translations for the current active deck.</p>
+                    </div>
+
+                    <div class="flex items-center gap-4 text-xs font-bold">
+                        <div class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-700">
+                            Moves: <span id="match-moves" class="text-indigo-600">0</span>
+                        </div>
+                        <div class="px-3 py-1.5 bg-slate-100 rounded-lg text-slate-700">
+                            Matches: <span id="match-score" class="text-emerald-600">0</span>/6
+                        </div>
+                        <button onclick="startMatchingGame()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Match Tiles Grid -->
+                <div id="match-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <!-- Dynamic Tiles injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 5: FULL WORD LIST TABLE -->
+        <section id="view-library" class="view-panel hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">VE2B Vocab List 1 Master Directory</h2>
+                        <p class="text-xs text-slate-500">All 188 vocabulary items categorized by Part of Speech.</p>
+                    </div>
+
+                    <button onclick="exportWordListJSON()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
+                        <i data-lucide="download" class="w-4 h-4"></i> Export Data
+                    </button>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[11px] border-y border-slate-200">
+                            <tr>
+                                <th class="py-3 px-4">#</th>
+                                <th class="py-3 px-4">Word</th>
+                                <th class="py-3 px-4">Part of Speech</th>
+                                <th class="py-3 px-4">Phonetics</th>
+                                <th class="py-3 px-4">Chinese Translation</th>
+                                <th class="py-3 px-4">English Meaning</th>
+                                <th class="py-3 px-4 text-center">Audio</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vocab-table-body" class="divide-y divide-slate-100 font-medium">
+                            <!-- Dynamic Table Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        /* ==========================================================================
+           FULL VOCABULARY DATASET FROM WORKSHEET (188 ITEMS)
+           ========================================================================== */
+        const completeWorksheetDataset = [
+            // --- NOUNS (105 items) ---
+            { id: 1, word: "activity", pos: "Noun", phonetic: "/ækˈtɪvəti/", meaning: "A condition in which things are happening or being done.", chinese: "活動", example: "The school organized a sports activity.", mastered: false },
+            { id: 2, word: "adult", pos: "Noun", phonetic: "/ˈædʌlt/", meaning: "A person who is fully grown or developed.", chinese: "成人 / 大人", example: "Tickets are cheaper for children than adults.", mastered: false },
+            { id: 3, word: "advertisement (ad)", pos: "Noun", phonetic: "/ədˈvɜːtɪsmənt/", meaning: "A notice promoting a product, service, or event.", chinese: "廣告", example: "I saw an advertisement for the new phone.", mastered: false },
+            { id: 4, word: "album", pos: "Noun", phonetic: "/ˈælbəm/", meaning: "A collection of audio recordings or photos.", chinese: "相簿 / 唱片", example: "She created a photo album of her trip.", mastered: false },
+            { id: 5, word: "arrangement", pos: "Noun", phonetic: "/əˈreɪndʒmənt/", meaning: "A plan or preparation for a future event.", chinese: "安排 / 佈置", example: "We made arrangements for the party.", mastered: false },
+            { id: 6, word: "attraction", pos: "Noun", phonetic: "/əˈtrækʃn/", meaning: "A place or feature that draws people's interest.", chinese: "景點 / 吸引力", example: "The museum is a popular tourist attraction.", mastered: false },
+            { id: 7, word: "audience", pos: "Noun", phonetic: "/ˈɔːdiəns/", meaning: "The assembled spectators or listeners.", chinese: "觀眾 / 聽眾", example: "The audience clapped enthusiastically.", mastered: false },
+            { id: 8, word: "bracelet", pos: "Noun", phonetic: "/ˈbreɪslət/", meaning: "An ornamental band worn around the wrist.", chinese: "手鍊 / 手環", example: "She wore a gold bracelet.", mastered: false },
+            { id: 9, word: "budget", pos: "Noun", phonetic: "/ˈbʌdʒɪt/", meaning: "An estimate of income and expenditure for a period.", chinese: "預算", example: "We need to stay within our budget.", mastered: false },
+            { id: 10, word: "buffet", pos: "Noun", phonetic: "/ˈbʊfeɪ/", meaning: "A meal consisting of several dishes from which guests serve themselves.", chinese: "自助餐", example: "The hotel offers a delicious lunch buffet.", mastered: false },
+            { id: 11, word: "business", pos: "Noun", phonetic: "/ˈbɪznəs/", meaning: "An organization or economic system where goods/services are exchanged.", chinese: "生意 / 商業 / 企業", example: "They started a small online business.", mastered: false },
+            { id: 12, word: "candle", pos: "Noun", phonetic: "/ˈkændl/", meaning: "A cylinder of wax with a central wick that burns to produce light.", chinese: "蠟燭", example: "He blew out the candles on his birthday cake.", mastered: false },
+            { id: 13, word: "celebrity", pos: "Noun", phonetic: "/səˈlebrəti/", meaning: "A famous person.", chinese: "名人 / 明星", example: "The event was attended by many celebrities.", mastered: false },
+            { id: 14, word: "centre", pos: "Noun", phonetic: "/ˈsentə(r)/", meaning: "A building or place used for a specified activity.", chinese: "中心", example: "The community centre holds weekend workshops.", mastered: false },
+            { id: 15, word: "ceremony", pos: "Noun", phonetic: "/ˈserəməni/", meaning: "A formal religious or public occasion.", chinese: "典禮 / 儀式", example: "The graduation ceremony starts at ten.", mastered: false },
+            { id: 16, word: "choice", pos: "Noun", phonetic: "/tʃɔɪs/", meaning: "An act of selecting between two or more possibilities.", chinese: "選擇", example: "You have a choice between coffee or tea.", mastered: false },
+            { id: 17, word: "cocktail", pos: "Noun", phonetic: "/ˈkɒkteɪl/", meaning: "An alcoholic drink consisting of a spirit mixed with other ingredients.", chinese: "雞尾酒", example: "They served fruit cocktails at the reception.", mastered: false },
+            { id: 18, word: "colleague", pos: "Noun", phonetic: "/ˈkɒliːɡ/", meaning: "A person with whom one works in a profession or business.", chinese: "同事", example: "She went to lunch with her colleagues.", mastered: false },
+            { id: 19, word: "comedy", pos: "Noun", phonetic: "/ˈkɒmədi/", meaning: "Professional entertainment consisting of jokes and satirical sketches.", chinese: "喜劇", example: "We watched a funny comedy last night.", mastered: false },
+            { id: 20, word: "company", pos: "Noun", phonetic: "/ˈkʌmpəni/", meaning: "A commercial business or firm.", chinese: "公司", example: "He works for a technology company.", mastered: false },
+            { id: 21, word: "competition", pos: "Noun", phonetic: "/ˌkɒmpəˈtɪʃn/", meaning: "An event or contest in which people compete.", chinese: "比賽 / 競爭", example: "She won first place in the swimming competition.", mastered: false },
+            { id: 22, word: "coupon", pos: "Noun", phonetic: "/ˈkuːpɒn/", meaning: "A voucher entitling the holder to a discount.", chinese: "優惠券", example: "Use this coupon to get 20% off.", mastered: false },
+            { id: 23, word: "course", pos: "Noun", phonetic: "/kɔːs/", meaning: "A series of lectures or lessons in a particular subject.", chinese: "課程", example: "I enrolled in an English writing course.", mastered: false },
+            { id: 24, word: "crystal", pos: "Noun", phonetic: "/ˈkrɪstl/", meaning: "A clear, transparent mineral or glass.", chinese: "水晶", example: "The chandelier was made of shiny crystal.", mastered: false },
+            { id: 25, word: "customer", pos: "Noun", phonetic: "/ˈkʌstəmə(r)/", meaning: "A person who buys goods or services from a shop or business.", chinese: "顧客 / 客戶", example: "The store provides great service to every customer.", mastered: false },
+            { id: 26, word: "dance", pos: "Noun", phonetic: "/dɑːns/", meaning: "A series of movements that match the speed and rhythm of music.", chinese: "舞蹈 / 舞會", example: "They performed a traditional folk dance.", mastered: false },
+            { id: 27, word: "delivery", pos: "Noun", phonetic: "/dɪˈlɪvəri/", meaning: "The action of delivering letters, parcels, or ordered goods.", chinese: "外送 / 遞送", example: "The food delivery arrived within thirty minutes.", mastered: false },
+            { id: 28, word: "demonstration", pos: "Noun", phonetic: "/ˌdemənˈstreɪʃn/", meaning: "An act of showing how something works or is performed.", chinese: "示範 / 演示", example: "The chef gave a cooking demonstration.", mastered: false },
+            { id: 29, word: "discount", pos: "Noun", phonetic: "/ˈdɪskaʊnt/", meaning: "A deduction from the usual cost of something.", chinese: "折扣", example: "Students receive a 10% discount.", mastered: false },
+            { id: 30, word: "effect", pos: "Noun", phonetic: "/ɪˈfekt/", meaning: "A change which is a result or consequence of an action.", chinese: "效果 / 影響", example: "The new rule had a positive effect on safety.", mastered: false },
+            { id: 31, word: "elderly", pos: "Noun", phonetic: "/ˈeldəli/", meaning: "Old or aging people considered as a group.", chinese: "長者 / 老人", example: "The community centre offers activities for the elderly.", mastered: false },
+            { id: 32, word: "engraving", pos: "Noun", phonetic: "/ɪnˈɡreɪvɪŋ/", meaning: "A print made from an engraved plate, or the art of carving designs.", chinese: "雕刻 / 銘刻", example: "The ring features a delicate engraving.", mastered: false },
+            { id: 33, word: "environment", pos: "Noun", phonetic: "/ɪnˈvaɪrənmənt/", meaning: "The surroundings or conditions in which a person, animal, or plant lives.", chinese: "環境", example: "We must protect the natural environment.", mastered: false },
+            { id: 34, word: "equipment", pos: "Noun", phonetic: "/ɪˈkwɪpmənt/", meaning: "The necessary items for a particular purpose or activity.", chinese: "設備 / 器材", example: "The gym has modern exercise equipment.", mastered: false },
+            { id: 35, word: "event", pos: "Noun", phonetic: "/ɪˈvent/", meaning: "A planned public or social occasion.", chinese: "活動 / 盛事", example: "The charity concert was a successful event.", mastered: false },
+            { id: 36, word: "exchange", pos: "Noun", phonetic: "/ɪksˈtʃeɪndʒ/", meaning: "An act of giving one thing and receiving another.", chinese: "交換 / 交流", example: "They had a useful exchange of ideas.", mastered: false },
+            { id: 37, word: "experience", pos: "Noun", phonetic: "/ɪksˈpɪəriəns/", meaning: "Practical contact with and observation of facts or events.", chinese: "經驗 / 體驗", example: "She has ten years of teaching experience.", mastered: false },
+            { id: 38, word: "facility", pos: "Noun", phonetic: "/fəˈsɪləti/", meaning: "A place, amenity, or piece of equipment provided for a purpose.", chinese: "設施 / 設備", example: "The sports facility includes a swimming pool.", mastered: false },
+            { id: 39, word: "feedback", pos: "Noun", phonetic: "/ˈfiːdbæk/", meaning: "Information about reactions to a product or performance.", chinese: "反饋 / 意見", example: "We welcome customer feedback to improve.", mastered: false },
+            { id: 40, word: "fitness", pos: "Noun", phonetic: "/ˈfɪtnəs/", meaning: "The condition of being physically fit and healthy.", chinese: "健美 / 健康", example: "Regular exercise improves overall fitness.", mastered: false },
+            { id: 41, word: "fittings", pos: "Noun", phonetic: "/ˈfɪtɪŋz/", meaning: "A small part or piece of furniture fixed in a house or shop.", chinese: "裝配 / 配件 / 試衣", example: "The kitchen fittings were updated.", mastered: false },
+            { id: 42, word: "fund-raising", pos: "Noun", phonetic: "/ˈfʌnd reɪzɪŋ/", meaning: "The seeking of financial support for a charity, cause, or enterprise.", chinese: "籌款", example: "The fund-raising event raised $5,000 for charity.", mastered: false },
+            { id: 43, word: "gift", pos: "Noun", phonetic: "/ɡɪft/", meaning: "A thing given willingly to someone without payment; a present.", chinese: "禮物", example: "He bought a birthday gift for his friend.", mastered: false },
+            { id: 44, word: "guest", pos: "Noun", phonetic: "/ɡest/", meaning: "A person who is invited to a place or event.", chinese: "賓客 / 貴賓", example: "All guests were invited to sit down for dinner.", mastered: false },
+            { id: 45, word: "health", pos: "Noun", phonetic: "/helθ/", meaning: "The state of being free from illness or injury.", chinese: "健康", example: "Eating vegetables is good for your health.", mastered: false },
+            { id: 46, word: "information", pos: "Noun", phonetic: "/ˌɪnfəˈmeɪʃn/", meaning: "Facts provided or learned about something or someone.", chinese: "資訊 / 資料", example: "For more information, visit our website.", mastered: false },
+            { id: 47, word: "installation", pos: "Noun", phonetic: "/ˌɪnstəˈleɪʃn/", meaning: "The action of installing equipment or machinery.", chinese: "安裝", example: "The software installation took only a few minutes.", mastered: false },
+            { id: 48, word: "instructor", pos: "Noun", phonetic: "/ɪnˈstrʌktə(r)/", meaning: "A person who teaches something, especially a practical skill.", chinese: "導師 / 教練", example: "The yoga instructor guided us through the movements.", mastered: false },
+            { id: 49, word: "interaction", pos: "Noun", phonetic: "/ˌɪntərˈækʃn/", meaning: "Reciprocal action or influence.", chinese: "互動", example: "Social interaction is essential for wellbeing.", mastered: false },
+            { id: 50, word: "language", pos: "Noun", phonetic: "/ˈlæŋɡwɪdʒ/", meaning: "The principal method of human communication.", chinese: "語言", example: "Learning a new language opens up opportunities.", mastered: false },
+            { id: 51, word: "leaflet", pos: "Noun", phonetic: "/ˈliːflət/", meaning: "A printed sheet of paper containing information or advertising.", chinese: "傳單", example: "Handing out leaflets near the station.", mastered: false },
+            { id: 52, word: "location", pos: "Noun", phonetic: "/ləʊˈkeɪʃn/", meaning: "A particular place or position.", chinese: "位置 / 地點", example: "The shop is in a convenient location.", mastered: false },
+            { id: 53, word: "logo", pos: "Noun", phonetic: "/ˈləʊɡəʊ/", meaning: "A symbol or design adopted by an organization to identify its products.", chinese: "標誌 / Logo", example: "The company redesigned its brand logo.", mastered: false },
+            { id: 54, word: "lucky draw", pos: "Noun", phonetic: "/ˈlʌki drɔː/", meaning: "A competition in which winners are chosen at random.", chinese: "幸運抽獎", example: "She won a tablet in the annual lucky draw.", mastered: false },
+            { id: 55, word: "maintenance", pos: "Noun", phonetic: "/ˈmeɪntənəns/", meaning: "The process of preserving or maintaining someone or something.", chinese: "保養 / 維修", example: "Regular maintenance keeps the machine working.", mastered: false },
+            { id: 56, word: "makeup", pos: "Noun", phonetic: "/ˈmeɪk ʌp/", meaning: "Cosmetics applied to the face to enhance or alter the appearance.", chinese: "化妝品", example: "She wore minimal makeup for the photo shoot.", mastered: false },
+            { id: 57, word: "manpower", pos: "Noun", phonetic: "/ˈmænpaʊə(r)/", meaning: "The number of people available for work or service.", chinese: "人力 / 人手", example: "We need more manpower to complete the project.", mastered: false },
+            { id: 58, word: "media", pos: "Noun", phonetic: "/ˈmiːdiə/", meaning: "The main means of mass communication (broadcasting, publishing, Internet).", chinese: "媒體", example: "The news was widely reported by the media.", mastered: false },
+            { id: 59, word: "membership", pos: "Noun", phonetic: "/ˈmembəʃɪp/", meaning: "The state of belonging to an organization or club.", chinese: "會籍 / 會員資格", example: "Annual membership includes free access to facilities.", mastered: false },
+            { id: 60, word: "method", pos: "Noun", phonetic: "/ˈmeθəd/", meaning: "A particular procedure for accomplishing or approaching something.", chinese: "方法", example: "This is an effective method for studying vocabulary.", mastered: false },
+            { id: 61, word: "model", pos: "Noun", phonetic: "/ˈmɒdl/", meaning: "A three-dimensional representation or example of a system/product.", chinese: "模型 / 模特兒", example: "They built a scale model of the new building.", mastered: false },
+            { id: 62, word: "month", pos: "Noun", phonetic: "/mʌnθ/", meaning: "Each of the twelve named periods into which a year is divided.", chinese: "月份", example: "February is the shortest month of the year.", mastered: false },
+            { id: 63, word: "movie", pos: "Noun", phonetic: "/ˈmuːvi/", meaning: "A cinema film.", chinese: "電影", example: "Let's watch an action movie tonight.", mastered: false },
+            { id: 64, word: "offer", pos: "Noun", phonetic: "/ˈɒfə(r)/", meaning: "A proposal or special price discount.", chinese: "優惠 / 報價", example: "Take advantage of our special limited-time offer.", mastered: false },
+            { id: 65, word: "ordering", pos: "Noun", phonetic: "/ˈɔːdərɪŋ/", meaning: "The act of requesting goods or services to be supplied.", chinese: "訂購 / 下單", example: "Online ordering makes shopping quick and easy.", mastered: false },
+            { id: 66, word: "performance", pos: "Noun", phonetic: "/pəˈfɔːməns/", meaning: "An act of presenting a play, concert, or other entertainment.", chinese: "表演 / 表現", example: "The choir gave an inspiring musical performance.", mastered: false },
+            { id: 67, word: "photography", pos: "Noun", phonetic: "/fəˈtɒɡrəfi/", meaning: "The art or practice of taking and processing photographs.", chinese: "攝影", example: "He took a course in digital photography.", mastered: false },
+            { id: 68, word: "photo-taking", pos: "Noun", phonetic: "/ˈfəʊtəʊ teɪkɪŋ/", meaning: "The activity of snapping pictures.", chinese: "拍照 / 攝影活動", example: "Photo-taking is permitted during the tour.", mastered: false },
+            { id: 69, word: "preparation", pos: "Noun", phonetic: "/ˌprepəˈreɪʃn/", meaning: "The action or process of making ready.", chinese: "準備 / 預備", example: "Good preparation is key to exam success.", mastered: false },
+            { id: 70, word: "product", pos: "Noun", phonetic: "/ˈprɒdʌkt/", meaning: "An article or substance that is manufactured or refined for sale.", chinese: "產品", example: "The company launched a new electronic product.", mastered: false },
+            { id: 71, word: "profit", pos: "Noun", phonetic: "/ˈprɒfɪt/", meaning: "A financial gain from a business activity.", chinese: "利潤 / 盈利", example: "The business made a high profit this quarter.", mastered: false },
+            { id: 72, word: "programme", pos: "Noun", phonetic: "/ˈprəʊɡræm/", meaning: "A planned series of future events, items, or performances.", chinese: "節目 / 計劃", example: "The youth centre organized a summer programme.", mastered: false },
+            { id: 73, word: "questionnaire", pos: "Noun", phonetic: "/ˌkwestʃəˈneə(r)/", meaning: "A set of printed or written questions for survey research.", chinese: "問卷", example: "Please complete the feedback questionnaire.", mastered: false },
+            { id: 74, word: "rate", pos: "Noun", phonetic: "/reɪt/", meaning: "A measure, quantity, or frequency typically measured against another value.", chinese: "率 / 費率 / 價格", example: "The hotel offers a discounted daily rate.", mastered: false },
+            { id: 75, word: "rebate", pos: "Noun", phonetic: "/ˈriːbeɪt/", meaning: "A partial refund to someone who has paid too much money.", chinese: "退款 / 回扣", example: "You can claim a tax rebate online.", mastered: false },
+            { id: 76, word: "referral", pos: "Noun", phonetic: "/rɪˈfɜːrəl/", meaning: "An act of referring someone to a service or person.", chinese: "轉介 / 推薦", example: "You get a bonus for every friend referral.", mastered: false },
+            { id: 77, word: "rental", pos: "Noun", phonetic: "/ˈrentl/", meaning: "An amount paid or received as rent, or the act of renting.", chinese: "租賃 / 租金", example: "Car rental services are located near the airport.", mastered: false },
+            { id: 78, word: "repair", pos: "Noun", phonetic: "/rɪˈpeə(r)/", meaning: "The action of fixing something that is broken or damaged.", chinese: "維修 / 修理", example: "The bicycle is in need of urgent repair.", mastered: false },
+            { id: 79, word: "sales", pos: "Noun", phonetic: "/seɪlz/", meaning: "The exchange of a commodity for money; the total amount sold.", chinese: "銷售 / 銷量", example: "Overall sales increased by 15% this year.", mastered: false },
+            { id: 80, word: "salon", pos: "Noun", phonetic: "/ˈsælɒn/", meaning: "An establishment where a hairdresser, beautician, or couturier conducts business.", chinese: "沙龍 / 美容院", example: "She booked an appointment at the hair salon.", mastered: false },
+            { id: 81, word: "scarf", pos: "Noun", phonetic: "/skɑːf/", meaning: "A length or square of fabric worn around the neck or shoulders.", chinese: "圍巾", example: "He wore a woolen scarf in winter.", mastered: false },
+            { id: 82, word: "scheme", pos: "Noun", phonetic: "/skiːm/", meaning: "A large-scale systematic plan or arrangement.", chinese: "方案 / 計劃", example: "The government introduced a new recycling scheme.", mastered: false },
+            { id: 83, word: "seminar", pos: "Noun", phonetic: "/ˈsemɪnɑː(r)/", meaning: "A conference or other meeting for discussion or training.", chinese: "研討會 / 講座", example: "Attending a seminar on digital marketing.", mastered: false },
+            { id: 84, word: "service", pos: "Noun", phonetic: "/ˈsɜːvɪs/", meaning: "The action of helping or doing work for someone.", chinese: "服務", example: "The restaurant is famous for friendly service.", mastered: false },
+            { id: 85, word: "shopper", pos: "Noun", phonetic: "/ˈʃɒpə(r)/", meaning: "A person who is shopping.", chinese: "顧客 / 購物者", example: "Weekend shoppers crowded the shopping mall.", mastered: false },
+            { id: 86, word: "show", pos: "Noun", phonetic: "/ʃəʊ/", meaning: "A spectacle or display presented to an audience.", chinese: "展覽 / 表演", example: "We saw an amazing magic show.", mastered: false },
+            { id: 87, word: "souvenir", pos: "Noun", phonetic: "/ˌsuːvəˈnɪə(r)/", meaning: "A thing that is kept as a reminder of a person, place, or event.", chinese: "紀念品", example: "I bought a keychain as a souvenir.", mastered: false },
+            { id: 88, word: "speaker", pos: "Noun", phonetic: "/ˈspiːkə(r)/", meaning: "A person who speaks, or an electroacoustic transducer.", chinese: "講者 / 揚聲器", example: "The guest speaker shared valuable advice.", mastered: false },
+            { id: 89, word: "sports", pos: "Noun", phonetic: "/spɔːts/", meaning: "An activity involving physical exertion and skill in competition.", chinese: "運動 / 體育", example: "Playing sports keeps you active and healthy.", mastered: false },
+            { id: 90, word: "station", pos: "Noun", phonetic: "/ˈsteɪʃn/", meaning: "A place or building where specified activities or services occur.", chinese: "車站 / 站", example: "Meet me at the train station entrance.", mastered: false },
+            { id: 91, word: "study", pos: "Noun", phonetic: "/ˈstʌdi/", meaning: "The devotion of time and attention to acquiring knowledge.", chinese: "研究 / 研讀", example: "A recent scientific study published new findings.", mastered: false },
+            { id: 92, word: "supermarket", pos: "Noun", phonetic: "/ˈsuːpəmɑːkɪt/", meaning: "A large self-service shop selling foods and household goods.", chinese: "超級市場", example: "Buying groceries at the local supermarket.", mastered: false },
+            { id: 93, word: "talent", pos: "Noun", phonetic: "/ˈtælənt/", meaning: "Natural aptitude or skill.", chinese: "才能 / 天賦", example: "She has a natural talent for playing piano.", mastered: false },
+            { id: 94, word: "team", pos: "Noun", phonetic: "/tiːm/", meaning: "A group of players forming one side in a competitive game or business.", chinese: "團隊 / 隊伍", example: "Our team worked hard to win the championship.", mastered: false },
+            { id: 95, word: "ticket", pos: "Noun", phonetic: "/ˈtɪkɪt/", meaning: "A piece of paper or card that gives the holder a certain right.", chinese: "門票 / 車票", example: "I bought two concert tickets online.", mastered: false },
+            { id: 96, word: "tote bag", pos: "Noun", phonetic: "/təʊt bæɡ/", meaning: "A large unlined bag with parallel handles.", chinese: "帆布袋 / 手提袋", example: "She carried her books in a canvas tote bag.", mastered: false },
+            { id: 97, word: "tour", pos: "Noun", phonetic: "/tʊə(r)/", meaning: "A journey for pleasure in which several different places are visited.", chinese: "導覽 / 旅遊", example: "We took a guided tour of the historical city.", mastered: false },
+            { id: 98, word: "training", pos: "Noun", phonetic: "/ˈtreɪnɪŋ/", meaning: "The action of teaching a person or animal a particular skill.", chinese: "培訓 / 訓練", example: "New employees receive two weeks of training.", mastered: false },
+            { id: 99, word: "trial", pos: "Noun", phonetic: "/ˈtraɪəl/", meaning: "A test of the performance, qualities, or suitability of something.", chinese: "試用 / 試驗", example: "Sign up for a free 30-day trial.", mastered: false },
+            { id: 100, word: "tumbler", pos: "Noun", phonetic: "/ˈtʌmblə(r)/", meaning: "A drinking glass or insulated water bottle without a handle.", chinese: "隨行杯 / 保溫杯", example: "Bring your own stainless steel tumbler.", mastered: false },
+            { id: 101, word: "tutor", pos: "Noun", phonetic: "/ˈtjuːtə(r)/", meaning: "A private teacher, typically one who teaches a single pupil or very small group.", chinese: "私人補習導師", example: "Her math tutor helped her raise her test scores.", mastered: false },
+            { id: 102, word: "tutorial", pos: "Noun", phonetic: "/tjuːˈtɔːriəl/", meaning: "A period of instruction given by a tutor to an individual or small group.", chinese: "輔導課 / 教學指南", example: "I watched an online tutorial to learn coding.", mastered: false },
+            { id: 103, word: "voucher", pos: "Noun", phonetic: "/ˈvaʊtʃə(r)/", meaning: "A small printed piece of paper that can be exchanged for goods or services.", chinese: "現金券 / 禮券", example: "I redeemed my shopping voucher at checkout.", mastered: false },
+            { id: 104, word: "warranty", pos: "Noun", phonetic: "/ˈwɒrənti/", meaning: "A written guarantee issued to the purchaser of an article.", chinese: "保養期 / 保固", example: "The laptop comes with a two-year warranty.", mastered: false },
+            { id: 105, word: "workshop", pos: "Noun", phonetic: "/ˈwɜːkʃɒp/", meaning: "A meeting at which a group of people engage in intensive discussion or activity.", chinese: "工作坊", example: "Attending a creative writing workshop.", mastered: false },
+
+            // --- ADJECTIVES (57 items) ---
+            { id: 106, word: "affordable", pos: "Adjective", phonetic: "/əˈfɔːdəbl/", meaning: "Inexpensive; reasonably priced.", chinese: "負擔得起的 / 實惠的", example: "The hotel offers clean and affordable rooms.", mastered: false },
+            { id: 107, word: "attractive", pos: "Adjective", phonetic: "/əˈtræktɪv/", meaning: "Pleasing or appealing to the senses.", chinese: "吸引人的 / 迷人的", example: "The store introduced an attractive deal.", mastered: false },
+            { id: 108, word: "common", pos: "Adjective", phonetic: "/ˈkɒmən/", meaning: "Occurring, found, or done often; prevalent.", chinese: "常見的 / 普通的", example: "Cold weather is common in December.", mastered: false },
+            { id: 109, word: "compact", pos: "Adjective", phonetic: "/kəmˈpækt/", meaning: "Exerting a small, well-designed size; neat.", chinese: "小巧精致的 / 緊湊的", example: "A compact camera is easy to carry.", mastered: false },
+            { id: 110, word: "convenient", pos: "Adjective", phonetic: "/kənˈviːniənt/", meaning: "Fitting in well with a person's needs, activities, or plans.", chinese: "方便的", example: "Living near MTR station is very convenient.", mastered: false },
+            { id: 111, word: "cost-effective", pos: "Adjective", phonetic: "/ˌkɒst ɪˈfektɪv/", meaning: "Effective or productive in relation to its cost.", chinese: "划算的 / 性價比高的", example: "Solar panels are a cost-effective energy solution.", mastered: false },
+            { id: 112, word: "costly", pos: "Adjective", phonetic: "/ˈkɒstli/", meaning: "Costing a lot of money; expensive.", chinese: "昂貴的", example: "Mistakes in planning can be very costly.", mastered: false },
+            { id: 113, word: "custom", pos: "Adjective", phonetic: "/ˈkʌstəm/", meaning: "Made or done to order for a particular customer.", chinese: "客製化的 / 定製的", example: "They ordered a custom leather jacket.", mastered: false },
+            { id: 114, word: "difficult", pos: "Adjective", phonetic: "/ˈdɪfɪkəlt/", meaning: "Needing much effort or skill to accomplish or understand.", chinese: "困難的", example: "The exam was quite difficult.", mastered: false },
+            { id: 115, word: "digital", pos: "Adjective", phonetic: "/ˈdɪdʒɪtl/", meaning: "Involving or relating to the use of computer technology.", chinese: "數位的 / 數碼的", example: "Digital marketing reaches a wide audience.", mastered: false },
+            { id: 116, word: "direct", pos: "Adjective", phonetic: "/dəˈrekt/", meaning: "Extending or moving from one place to another without changing direction.", chinese: "直接的", example: "There is a direct flight from Hong Kong to London.", mastered: false },
+            { id: 117, word: "eco-friendly", pos: "Adjective", phonetic: "/ˌiːkəʊ ˈfrendli/", meaning: "Not harmful to the environment.", chinese: "環保的", example: "Using eco-friendly reusable shopping bags.", mastered: false },
+            { id: 118, word: "elegant", pos: "Adjective", phonetic: "/ˈelɪɡənt/", meaning: "Graceful and stylish in appearance or manner.", chinese: "高雅的 / 優雅的", example: "She wore an elegant evening dress.", mastered: false },
+            { id: 119, word: "energy-saving", pos: "Adjective", phonetic: "/ˈenədʒi seɪvɪŋ/", meaning: "Designed to reduce consumption of energy.", chinese: "節能的", example: "Install energy-saving LED light bulbs.", mastered: false },
+            { id: 120, word: "enough", pos: "Adjective", phonetic: "/ɪˈnʌf/", meaning: "As much or as many as required; sufficient.", chinese: "足夠的", example: "Make sure you get enough sleep.", mastered: false },
+            { id: 121, word: "entertaining", pos: "Adjective", phonetic: "/ˌentəˈteɪnɪŋ/", meaning: "Providing amusement or enjoyment.", chinese: "有娛樂性的 / 有趣的", example: "The movie was lively and entertaining.", mastered: false },
+            { id: 122, word: "excellent", pos: "Adjective", phonetic: "/ˈeksələnt/", meaning: "Extremely good; outstanding.", chinese: "優秀的 / 出色的", example: "She received an excellent exam result.", mastered: false },
+            { id: 123, word: "existing", pos: "Adjective", phonetic: "/ɪɡˈzɪstɪŋ/", meaning: "In existence or present at present time.", chinese: "現有的 / 現存的", example: "We will upgrade the existing facilities.", mastered: false },
+            { id: 124, word: "expensive", pos: "Adjective", phonetic: "/ɪkˈspensɪv/", meaning: "Costing a lot of money.", chinese: "昂貴的", example: "Designer watches can be very expensive.", mastered: false },
+            { id: 125, word: "fast", pos: "Adjective", phonetic: "/fɑːst/", meaning: "Moving or capable of moving at high speed.", chinese: "快速的", example: "The high-speed train is very fast.", mastered: false },
+            { id: 126, word: "flexible", pos: "Adjective", phonetic: "/ˈfleksəbl/", meaning: "Capable of bending easily or adaptable to change.", chinese: "靈活的 / 彈性的", example: "We offer flexible working schedules.", mastered: false },
+            { id: 127, word: "handmade", pos: "Adjective", phonetic: "/ˌhændˈmeɪd/", meaning: "Made by hand rather than by machine.", chinese: "手工製作的", example: "She sells beautiful handmade jewelry.", mastered: false },
+            { id: 128, word: "hard", pos: "Adjective", phonetic: "/hɑːd/", meaning: "Solid, firm, or requiring a lot of effort.", chinese: "堅硬的 / 艱難的", example: "Working hard leads to success.", mastered: false },
+            { id: 129, word: "innovative", pos: "Adjective", phonetic: "/ˈɪnəveɪtɪv/", meaning: "Featuring new methods or ideas; original and creative.", chinese: "創新的", example: "An innovative design for smartphones.", mastered: false },
+            { id: 130, word: "interactive", pos: "Adjective", phonetic: "/ˌɪntərˈæktɪv/", meaning: "Allowing two-way flow of information or user action.", chinese: "互動式的", example: "The science exhibition was fully interactive.", mastered: false },
+            { id: 131, word: "limited", pos: "Adjective", phonetic: "/ˈlɪmɪtɪd/", meaning: "Restricted in size, amount, or extent.", chinese: "有限的 / 限量版的", example: "This is a limited edition watch.", mastered: false },
+            { id: 132, word: "live", pos: "Adjective", phonetic: "/laɪv/", meaning: "Transmitted at the time of occurrence, not recorded.", chinese: "現場直播的", example: "They watched a live music concert.", mastered: false },
+            { id: 133, word: "mobile", pos: "Adjective", phonetic: "/ˈməʊbaɪl/", meaning: "Able to move or be moved freely and easily.", chinese: "移動式的 / 流動的", example: "Download our mobile phone app.", mastered: false },
+            { id: 134, word: "multifunctional", pos: "Adjective", phonetic: "/ˌmʌltiˈfʌŋkʃənl/", meaning: "Having or fulfilling several functions.", chinese: "多功能的", example: "A multifunctional kitchen device.", mastered: false },
+            { id: 135, word: "multipurpose", pos: "Adjective", phonetic: "/ˌmʌltiˈpɜːpəs/", meaning: "Having several uses or applications.", chinese: "多用途的", example: "A multipurpose cleaner for all surfaces.", mastered: false },
+            { id: 136, word: "musical", pos: "Adjective", phonetic: "/ˈmjuːzɪkl/", meaning: "Relating to music or skilled in music.", chinese: "音樂的", example: "He has great musical talent.", mastered: false },
+            { id: 137, word: "online", pos: "Adjective", phonetic: "/ˌɒnˈlaɪn/", meaning: "Controlled by or connected to a computer or the Internet.", chinese: "線上的 / 網絡的", example: "Shopping online saves time.", mastered: false },
+            { id: 138, word: "on-site", pos: "Adjective", phonetic: "/ˌɒn ˈsaɪt/", meaning: "Taking place or available at the site of a particular activity.", chinese: "現場的 / 即場的", example: "Free on-site parking is available.", mastered: false },
+            { id: 139, word: "popular", pos: "Adjective", phonetic: "/ˈpɒpjələ(r)/", meaning: "Liked or admired by many people.", chinese: "受歡迎的", example: "This cafe is popular among students.", mastered: false },
+            { id: 140, word: "portable", pos: "Adjective", phonetic: "/ˈpɔːtəbl/", meaning: "Able to be easily carried or moved.", chinese: "可攜式的 / 便攜的", example: "A portable speaker for outdoor music.", mastered: false },
+            { id: 141, word: "potential", pos: "Adjective", phonetic: "/pəˈtenʃl/", meaning: "Having or showing the capacity to develop into something in the future.", chinese: "有潛力的 / 潛在的", example: "Meeting with potential clients tomorrow.", mastered: false },
+            { id: 142, word: "practical", pos: "Adjective", phonetic: "/ˈpræktɪkl/", meaning: "Of or concerned with the actual doing or use of something.", chinese: "實用的 / 實際的", example: "This course offers practical advice.", mastered: false },
+            { id: 143, word: "professional", pos: "Adjective", phonetic: "/prəˈfeʃənl/", meaning: "Relating to or belonging to a profession; competent.", chinese: "專業的", example: "Always maintain a professional attitude.", mastered: false },
+            { id: 144, word: "promotional", pos: "Adjective", phonetic: "/prəˈməʊʃənl/", meaning: "Relating to the publicity or advertisement of a product.", chinese: "宣傳的 / 推廣的", example: "Handing out promotional vouchers.", mastered: false },
+            { id: 145, word: "quality", pos: "Adjective", phonetic: "/ˈkwɒləti/", meaning: "Of good or high standard.", chinese: "優質的", example: "We aim to provide quality products.", mastered: false },
+            { id: 146, word: "relaxing", pos: "Adjective", phonetic: "/rɪˈlæksɪŋ/", meaning: "Reducing tension or anxiety.", chinese: "令人放鬆的", example: "Listening to relaxing music after work.", mastered: false },
+            { id: 147, word: "simple", pos: "Adjective", phonetic: "/ˈsɪmpl/", meaning: "Easily understood or done; presenting no difficulty.", chinese: "簡單的", example: "Follow these simple instructions.", mastered: false },
+            { id: 148, word: "space-consuming", pos: "Adjective", phonetic: "/speɪs kənˈsjuːmɪŋ/", meaning: "Taking up a large amount of space.", chinese: "佔用空間的", example: "Large furniture can be space-consuming.", mastered: false },
+            { id: 149, word: "space-saving", pos: "Adjective", phonetic: "/speɪs seɪvɪŋ/", meaning: "Designed to occupy little space.", chinese: "省空間的 / 節省空間的", example: "A foldable table is a great space-saving idea.", mastered: false },
+            { id: 150, word: "special", pos: "Adjective", phonetic: "/ˈspeʃl/", meaning: "Better, greater, or otherwise different from what is usual.", chinese: "特別的", example: "Today is a special celebration.", mastered: false },
+            { id: 151, word: "stylish", pos: "Adjective", phonetic: "/ˈstaɪlɪʃ/", meaning: "Fashionably elegant or sophisticated.", chinese: "時髦的 / 有型格的", example: "She wore a stylish new coat.", mastered: false },
+            { id: 152, word: "suitable", pos: "Adjective", phonetic: "/ˈsuːtəbl/", meaning: "Right or appropriate for a particular person, purpose, or situation.", chinese: "合適的", example: "Choose a suitable time for the meeting.", mastered: false },
+            { id: 153, word: "time-consuming", pos: "Adjective", phonetic: "/ˈtaɪm kənˌsjuːmɪŋ/", meaning: "Taking a lot of time to do.", chinese: "耗時的 / 費時的", example: "Manual data entry is very time-consuming.", mastered: false },
+            { id: 154, word: "traditional", pos: "Adjective", phonetic: "/trəˈdɪʃənl/", meaning: "Existing in or as part of a long-established custom.", chinese: "傳統的", example: "They served traditional festive food.", mastered: false },
+            { id: 155, word: "trendy", pos: "Adjective", phonetic: "/ˈtrendi/", meaning: "Very fashionable or up to date.", chinese: "潮流的 / 潮流前線的", example: "The district is full of trendy clothes shops.", mastered: false },
+            { id: 156, word: "unique", pos: "Adjective", phonetic: "/juˈniːk/", meaning: "Being the only one of its kind; unlike anything else.", chinese: "獨特的 / 獨一無二的", example: "Each handmade plate has a unique pattern.", mastered: false },
+            { id: 157, word: "useful", pos: "Adjective", phonetic: "/ˈjuːsfl/", meaning: "Able to be used for a practical purpose or in several ways.", chinese: "有用的", example: "This dictionary is very useful.", mastered: false },
+            { id: 158, word: "user-friendly", pos: "Adjective", phonetic: "/ˌjuːzə ˈfrendli/", meaning: "Easy to use or understand.", chinese: "方便易用的 / 介面友好的", example: "The new app interface is user-friendly.", mastered: false },
+            { id: 159, word: "waterproof", pos: "Adjective", phonetic: "/ˈwɔːtəpruːf/", meaning: "Impervious to water.", chinese: "防水的", example: "Wear a waterproof jacket in the rain.", mastered: false },
+            { id: 160, word: "western", pos: "Adjective", phonetic: "/ˈwestən/", meaning: "Living in or originating from the west.", chinese: "西方的", example: "Western food is available in the hotel restaurant.", mastered: false },
+            { id: 161, word: "wide", pos: "Adjective", phonetic: "/waɪd/", meaning: "Measuring a lot from side to side; including a great variety.", chinese: "廣闊的 / 種類繁多的", example: "The shop offers a wide range of choices.", mastered: false },
+            { id: 162, word: "young", pos: "Adjective", phonetic: "/jʌŋ/", meaning: "Having lived or existed for only a short time.", chinese: "年輕的", example: "The program supports young artists.", mastered: false },
+
+            // --- VERBS (23 items) ---
+            { id: 163, word: "advertise", pos: "Verb", phonetic: "/ˈædvətaɪz/", meaning: "Describe or draw attention to a product in a public medium.", chinese: "做廣告 / 宣傳", example: "They advertise their products on social media.", mastered: false },
+            { id: 164, word: "affect", pos: "Verb", phonetic: "/əˈfekt/", meaning: "Have an effect on; make a difference to.", chinese: "影響", example: "Stress can negatively affect health.", mastered: false },
+            { id: 165, word: "arrange", pos: "Verb", phonetic: "/əˈreɪndʒ/", meaning: "Put things in a neat, attractive, or required order.", chinese: "安排 / 整理", example: "Please arrange a meeting with the client.", mastered: false },
+            { id: 166, word: "attract", pos: "Verb", phonetic: "/əˈtrækt/", meaning: "Draw or entice cause to come to a place.", chinese: "吸引", example: "Bright lights attract insects.", mastered: false },
+            { id: 167, word: "collect", pos: "Verb", phonetic: "/kəˈlekt/", meaning: "Bring or gather together things, typically when ordered.", chinese: "收集 / 領取", example: "You can collect your ticket at the counter.", mastered: false },
+            { id: 168, word: "connect", pos: "Verb", phonetic: "/kəˈnekt/", meaning: "Bring together or into contact so that a real link is established.", chinese: "連接 / 聯繫", example: "Connect your phone to the Wi-Fi network.", mastered: false },
+            { id: 169, word: "create", pos: "Verb", phonetic: "/kriˈeɪt/", meaning: "Bring something into existence.", chinese: "創造 / 建立", example: "The artist created a magnificent sculpture.", mastered: false },
+            { id: 170, word: "decorate", pos: "Verb", phonetic: "/ˈdekəreɪt/", meaning: "Make something look more attractive by adding ornament.", chinese: "裝飾 / 布置", example: "They decorated the hall for the party.", mastered: false },
+            { id: 171, word: "design", pos: "Verb", phonetic: "/dɪˈzaɪn/", meaning: "Decide upon the look and functioning of a building or object.", chinese: "設計", example: "She designed a new logo for the company.", mastered: false },
+            { id: 172, word: "hire", pos: "Verb", phonetic: "/ˈhaɪə(r)/", meaning: "Employ someone for wages, or rent an object for temporary use.", chinese: "聘請 / 租用", example: "They plan to hire three new teachers.", mastered: false },
+            { id: 173, word: "improve", pos: "Verb", phonetic: "/ɪmˈpruːv/", meaning: "Make or become better.", chinese: "改善 / 提高", example: "Practice helps improve your English skills.", mastered: false },
+            { id: 174, word: "invite", pos: "Verb", phonetic: "/ɪnˈvaɪt/", meaning: "Make a polite or formal request to someone to attend.", chinese: "邀請", example: "We invited twenty guests to the dinner.", mastered: false },
+            { id: 175, word: "involve", pos: "Verb", phonetic: "/ɪnˈvɒlv/", meaning: "Include or affect someone/something as a necessary part.", chinese: "包含 / 涉及", example: "The project involves teamwork and research.", mastered: false },
+            { id: 176, word: "match", pos: "Verb", phonetic: "/mætʃ/", meaning: "Correspond or cause to correspond in appearance or type.", chinese: "配對 / 吻合", example: "The shoes match her handbag perfectly.", mastered: false },
+            { id: 177, word: "organise", pos: "Verb", phonetic: "/ˈɔːɡənaɪz/", meaning: "Make arrangements or preparations for an event.", chinese: "組織 / 舉辦", example: "They organised a charity run last Sunday.", mastered: false },
+            { id: 178, word: "promote", pos: "Verb", phonetic: "/prəˈməʊt/", meaning: "Support or encourage the cause, venture, or sales of.", chinese: "推廣 / 宣傳 / 升職", example: "The campaign aims to promote eco-friendly living.", mastered: false },
+            { id: 179, word: "provide", pos: "Verb", phonetic: "/prəˈvaɪd/", meaning: "Make available for use; supply.", chinese: "提供", example: "The school provides free textbooks.", mastered: false },
+            { id: 180, word: "reach", pos: "Verb", phonetic: "/riːtʃ/", meaning: "Arrive at or get as far as a place/target.", chinese: "到達 / 達成", example: "We reached the hotel before sunset.", mastered: false },
+            { id: 181, word: "recruit", pos: "Verb", phonetic: "/rɪˈkruːt/", meaning: "Enroll or enlist someone in a business or organization.", chinese: "招募 / 招聘", example: "The company is recruiting software engineers.", mastered: false },
+            { id: 182, word: "retain", pos: "Verb", phonetic: "/rɪˈteɪn/", meaning: "Continue to have something; keep possession of.", chinese: "保留 / 留住", example: "Good service helps retain loyal customers.", mastered: false },
+            { id: 183, word: "suit", pos: "Verb", phonetic: "/suːt/", meaning: "Be convenient for or acceptable to someone.", chinese: "適合", example: "Does Friday morning suit you for the meeting?", mastered: false },
+            { id: 184, word: "upgrade", pos: "Verb", phonetic: "/ˌʌpˈɡreɪd/", meaning: "Raise to a higher standard or improve.", chinese: "升級 / 提升", example: "You can upgrade your seat to business class.", mastered: false },
+            { id: 185, word: "welcome", pos: "Verb", phonetic: "/ˈwelkəm/", meaning: "Greet someone arriving in a glad, polite, or friendly way.", chinese: "歡迎", example: "The host welcomed all visitors at the door.", mastered: false },
+
+            // --- ADVERBS (3 items) ---
+            { id: 186, word: "quite", pos: "Adverb", phonetic: "/kwaɪt/", meaning: "To a utmost or considerable degree; fairly.", chinese: "相當地 / 十分地", example: "The test was quite easy for prepared students.", mastered: false },
+            { id: 187, word: "easily", pos: "Adverb", phonetic: "/ˈiːzəli/", meaning: "Without difficulty or effort.", chinese: "容易地 / 輕而易舉地", example: "You can easily find the answer online.", mastered: false },
+            { id: 188, word: "rather", pos: "Adverb", phonetic: "/ˈrɑːðə(r)/", meaning: "To a certain or significant extent or degree.", chinese: "相當 / 寧願", example: "It was rather cold outside yesterday.", mastered: false }
+        ];
+
+        /* ==========================================================================
+           APP STATE MANAGEMENT & MANAGEABILITY CHUNKING
+           ========================================================================== */
+        let vocabList = JSON.parse(localStorage.getItem('vocabmaster_ve2b_full')) || completeWorksheetDataset;
+        
+        let activePOSFilter = 'ALL';
+        let activePack = 'ALL'; // ALL, DAILY10, PACK1, PACK2, etc.
+        let showUnmasteredOnly = false;
+        let searchQuery = '';
+        
+        let filteredVocab = [];
+
+        // Flashcards state
+        let currentCardIndex = 0;
+        let isCardFlipped = false;
+
+        // Quiz state
+        let quizScore = 0;
+        let currentQuizWord = null;
+
+        // Speech Lab state
+        let currentSpeechIndex = 0;
+        let isRecording = false;
+        let recognition = null;
+
+        // Match Game state
+        let matchTiles = [];
+        let selectedTileOne = null;
+        let selectedTileTwo = null;
+        let matchMoves = 0;
+        let matchMatches = 0;
+
+        // Accent settings
+        let selectedAccent = 'en-US'; 
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateFilteredVocab();
+            updateMasteryStats();
+            renderFlashcard();
+            renderTable();
+            initSpeechRecognition();
+            startMatchingGame();
+            
+            // Re-render icons
+            lucide.createIcons();
+        });
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('vocabmaster_ve2b_full', JSON.stringify(vocabList));
+            updateMasteryStats();
+        }
+
+        /* Filter calculation logic with Chunking & Manageable Sub-packs */
+        function updateFilteredVocab() {
+            filteredVocab = vocabList.filter((item, index) => {
+                // 1. POS Filter
+                const matchesPOS = (activePOSFilter === 'ALL') || (item.pos === activePOSFilter);
+                
+                // 2. Search Filter
+                const matchesSearch = item.word.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      item.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      item.chinese.includes(searchQuery);
+
+                // 3. Unmastered Only Filter
+                const matchesMastery = showUnmasteredOnly ? !item.mastered : true;
+
+                return matchesPOS && matchesSearch && matchesMastery;
+            });
+
+            // 4. Pack Sub-chunking (Limits deck size to 10-15 words so students aren't overwhelmed)
+            if (activePack === 'DAILY10') {
+                filteredVocab = filteredVocab.slice(0, 10);
+            } else if (activePack.startsWith('PACK')) {
+                const packNum = parseInt(activePack.replace('PACK', ''));
+                const pageSize = 15;
+                const startIndex = (packNum - 1) * pageSize;
+                filteredVocab = filteredVocab.slice(startIndex, startIndex + pageSize);
+            }
+
+            // Update DOM counters
+            document.getElementById('count-all').innerText = vocabList.length;
+            document.getElementById('count-noun').innerText = vocabList.filter(v => v.pos === 'Noun').length;
+            document.getElementById('count-adj').innerText = vocabList.filter(v => v.pos === 'Adjective').length;
+            document.getElementById('count-verb').innerText = vocabList.filter(v => v.pos === 'Verb').length;
+            document.getElementById('count-adv').innerText = vocabList.filter(v => v.pos === 'Adverb').length;
+            
+            document.getElementById('active-pool-count').innerText = filteredVocab.length;
+
+            // Reset current indices if out of bound
+            if (currentCardIndex >= filteredVocab.length) currentCardIndex = 0;
+            if (currentSpeechIndex >= filteredVocab.length) currentSpeechIndex = 0;
+
+            // Re-render active views
+            renderFlashcard();
+            renderTable();
+        }
+
+        function handlePackChange(packVal) {
+            activePack = packVal;
+            currentCardIndex = 0;
+            currentSpeechIndex = 0;
+            updateFilteredVocab();
+        }
+
+        function toggleUnmasteredOnly(checked) {
+            showUnmasteredOnly = checked;
+            currentCardIndex = 0;
+            currentSpeechIndex = 0;
+            updateFilteredVocab();
+        }
+
+        function filterByPOS(pos) {
+            activePOSFilter = pos;
+            
+            // Highlight button UI
+            document.querySelectorAll('.pos-filter-btn').forEach(btn => {
+                if (btn.dataset.pos === pos) {
+                    btn.className = "pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm";
+                } else {
+                    btn.className = "pos-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+
+            document.getElementById('pos-badge-indicator').innerText = `Category: ${pos}`;
+            
+            currentCardIndex = 0;
+            currentSpeechIndex = 0;
+            updateFilteredVocab();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val;
+            updateFilteredVocab();
+        }
+
+        function updateMasteryStats() {
+            const masteredCount = vocabList.filter(v => v.mastered).length;
+            document.getElementById('mastered-count').innerText = masteredCount;
+            document.getElementById('total-words-count').innerText = vocabList.length;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                btn.classList.add('text-slate-600');
+            });
+
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('text-indigo-600'));
+
+            const selectedPanel = document.getElementById(`view-${tabId}`);
+            if (selectedPanel) selectedPanel.classList.remove('hidden');
+
+            const desktopNavBtn = document.getElementById(`nav-${tabId}`);
+            if (desktopNavBtn) {
+                desktopNavBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                desktopNavBtn.classList.remove('text-slate-600');
+            }
+
+            const mobileNavBtn = document.getElementById(`mob-${tabId}`);
+            if (mobileNavBtn) mobileNavBtn.classList.add('text-indigo-600');
+
+            if (tabId === 'quiz') generateQuizQuestion();
+            if (tabId === 'speech') updateSpeechLabUI();
+            if (tabId === 'match') startMatchingGame();
+        }
+
+        /* ==========================================================================
+           FLASHCARDS LOGIC
+           ========================================================================== */
+        function flipCard() {
+            const inner = document.getElementById('flashcard-inner');
+            isCardFlipped = !isCardFlipped;
+            if (isCardFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function renderFlashcard() {
+            if (filteredVocab.length === 0) {
+                document.getElementById('card-word-front').innerText = "No Words in Pack";
+                document.getElementById('card-definition-back').innerText = "Try changing your filter or unchecking 'Unmastered Only'.";
+                document.getElementById('card-counter').innerText = "0 of 0";
+                return;
+            }
+
+            const item = filteredVocab[currentCardIndex];
+            
+            if (isCardFlipped) {
+                isCardFlipped = false;
+                document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+            }
+
+            // Populate Front
+            document.getElementById('card-word-front').innerText = item.word;
+            document.getElementById('card-pos-front').innerText = item.pos;
+            document.getElementById('card-phonetic-front').innerText = item.phonetic || '';
+            
+            // Mastery tag
+            const tag = document.getElementById('card-mastery-tag');
+            if (item.mastered) {
+                tag.innerText = "✓ Mastered";
+                tag.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700";
+            } else {
+                tag.innerText = "Need Practice";
+                tag.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700";
+            }
+
+            // Populate Back
+            document.getElementById('card-pos-back').innerText = item.pos;
+            document.getElementById('card-definition-back').innerText = item.meaning;
+            document.getElementById('card-chinese-back').innerText = item.chinese || '';
+            document.getElementById('card-example-back').innerText = item.example ? `"${item.example}"` : 'No example sentence available.';
+            
+            document.getElementById('card-counter').innerText = `Card ${currentCardIndex + 1} of ${filteredVocab.length}`;
+        }
+
+        function nextCard() {
+            if (filteredVocab.length === 0) return;
+            currentCardIndex = (currentCardIndex + 1) % filteredVocab.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            if (filteredVocab.length === 0) return;
+            currentCardIndex = (currentCardIndex - 1 + filteredVocab.length) % filteredVocab.length;
+            renderFlashcard();
+        }
+
+        function markCurrentMastery(isMastered) {
+            if (filteredVocab.length === 0) return;
+            const currentItem = filteredVocab[currentCardIndex];
+            currentItem.mastered = isMastered;
+            saveData();
+            renderFlashcard();
+            renderTable();
+        }
+
+        /* ==========================================================================
+           AUDIO & TTS
+           ========================================================================== */
+        function toggleVoiceAccent() {
+            if (selectedAccent === 'en-US') {
+                selectedAccent = 'en-GB';
+                document.getElementById('accent-flag').innerText = '🇬🇧';
+                document.getElementById('accent-label').innerText = 'UK Accent';
+            } else {
+                selectedAccent = 'en-US';
+                document.getElementById('accent-flag').innerText = '🇺🇸';
+                document.getElementById('accent-label').innerText = 'US Accent';
+            }
+        }
+
+        function speakWord(text) {
+            if (!('speechSynthesis' in window)) return;
+
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = selectedAccent;
+            utterance.rate = 0.9;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const matchingVoice = voices.find(v => v.lang.includes(selectedAccent.replace('-', '_')) || v.lang.includes(selectedAccent));
+            if (matchingVoice) utterance.voice = matchingVoice;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakCurrentWord() {
+            if (filteredVocab.length === 0) return;
+            speakWord(filteredVocab[currentCardIndex].word);
+        }
+
+        function speakQuizWord() {
+            if (currentQuizWord) speakWord(currentQuizWord.word);
+        }
+
+        function speakTargetWord() {
+            if (filteredVocab.length === 0) return;
+            speakWord(filteredVocab[currentSpeechIndex].word);
+        }
+
+        /* ==========================================================================
+           QUIZ MODE LOGIC
+           ========================================================================== */
+        function generateQuizQuestion() {
+            const activePool = filteredVocab.length >= 2 ? filteredVocab : vocabList;
+
+            // Hide explanation
+            const expBox = document.getElementById('quiz-explanation');
+            expBox.classList.add('hidden');
+
+            // Select target word
+            const randomIndex = Math.floor(Math.random() * activePool.length);
+            currentQuizWord = activePool[randomIndex];
+
+            document.getElementById('quiz-question-text').innerText = `"${currentQuizWord.chinese} - ${currentQuizWord.meaning}"`;
+
+            // Options: 1 correct + 3 options
+            let options = [currentQuizWord];
+            while (options.length < Math.min(4, activePool.length)) {
+                const randOption = activePool[Math.floor(Math.random() * activePool.length)];
+                if (!options.find(o => o.id === randOption.id)) {
+                    options.push(randOption);
+                }
+            }
+
+            options.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('quiz-options-grid');
+            grid.innerHTML = options.map(opt => `
+                <button onclick="checkQuizAnswer(${opt.id})" class="quiz-option-btn p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 text-left transition font-semibold text-xs flex items-center justify-between group">
+                    <span class="text-slate-800 group-hover:text-indigo-700 font-bold text-sm sm:text-base">${opt.word}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">${opt.pos}</span>
+                </button>
+            `).join('');
+        }
+
+        function checkQuizAnswer(selectedId) {
+            const expBox = document.getElementById('quiz-explanation');
+            expBox.classList.remove('hidden');
+
+            document.querySelectorAll('.quiz-option-btn').forEach(btn => btn.disabled = true);
+
+            if (selectedId === currentQuizWord.id) {
+                quizScore += 10;
+                document.getElementById('quiz-score').innerText = quizScore;
+                
+                expBox.className = "p-4 rounded-xl text-xs font-semibold border bg-emerald-50 border-emerald-200 text-emerald-800 space-y-1";
+                expBox.innerHTML = `
+                    <div class="flex items-center gap-1.5 font-bold text-emerald-700 text-sm">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Correct Answer! (+10 pts)
+                    </div>
+                    <p><b>${currentQuizWord.word}</b> (${currentQuizWord.pos}): ${currentQuizWord.meaning} - <span class="text-amber-700 font-bold">${currentQuizWord.chinese}</span></p>
+                `;
+
+                currentQuizWord.mastered = true;
+                saveData();
+            } else {
+                expBox.className = "p-4 rounded-xl text-xs font-semibold border bg-rose-50 border-rose-200 text-rose-800 space-y-1";
+                expBox.innerHTML = `
+                    <div class="flex items-center gap-1.5 font-bold text-rose-700 text-sm">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i> Incorrect!
+                    </div>
+                    <p>The correct word was <b>${currentQuizWord.word}</b> (${currentQuizWord.pos}).</p>
+                    <p class="text-slate-600">Chinese: ${currentQuizWord.chinese} | Meaning: ${currentQuizWord.meaning}</p>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        /* ==========================================================================
+           SPEECH LAB LOGIC
+           ========================================================================== */
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = selectedAccent;
+
+                recognition.onstart = () => {
+                    isRecording = true;
+                    document.getElementById('record-btn-text').innerText = "Listening...";
+                    document.getElementById('record-btn').className = "px-6 py-3 bg-amber-500 text-white rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 animate-pulse-ring";
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                    evaluatePronunciation(transcript);
+                };
+
+                recognition.onerror = () => {
+                    stopRecording();
+                    document.getElementById('speech-result-msg').innerText = "Microphone error or permission denied. Please try again.";
+                };
+
+                recognition.onend = () => {
+                    stopRecording();
+                };
+            }
+        }
+
+        function toggleRecording() {
+            if (!recognition) {
+                alert("Speech recognition requires Google Chrome or Safari.");
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.lang = selectedAccent;
+                recognition.start();
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            document.getElementById('record-btn-text').innerText = "Speak Now";
+            document.getElementById('record-btn').className = "px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 transition";
+        }
+
+        function evaluatePronunciation(userTranscript) {
+            if (filteredVocab.length === 0) return;
+            const targetWord = filteredVocab[currentSpeechIndex].word.toLowerCase();
+            
+            const feedbackBox = document.getElementById('speech-feedback-box');
+            feedbackBox.classList.remove('hidden');
+
+            document.getElementById('speech-transcription').innerText = `"${userTranscript}"`;
+
+            if (userTranscript === targetWord || userTranscript.includes(targetWord)) {
+                document.getElementById('speech-accuracy-badge').className = "px-2 py-0.5 rounded text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 font-bold";
+                document.getElementById('speech-accuracy-badge').innerText = "100% Match";
+                document.getElementById('speech-result-msg').innerText = "🎉 Excellent! Clear and accurate pronunciation.";
+                confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+            } else {
+                document.getElementById('speech-accuracy-badge').className = "px-2 py-0.5 rounded text-[10px] bg-amber-500/30 text-amber-300 border border-amber-400/40 font-bold";
+                document.getElementById('speech-accuracy-badge').innerText = "Needs Practice";
+                document.getElementById('speech-result-msg').innerText = `Listen closely to the standard audio clip for '${targetWord}' and try again.`;
+            }
+        }
+
+        function updateSpeechLabUI() {
+            if (filteredVocab.length === 0) return;
+            const item = filteredVocab[currentSpeechIndex];
+            
+            document.getElementById('speech-pos-badge').innerText = item.pos;
+            document.getElementById('speech-target-word').innerText = item.word;
+            document.getElementById('speech-phonetic').innerText = item.phonetic || '';
+            document.getElementById('speech-meaning').innerText = `${item.meaning} (${item.chinese})`;
+            document.getElementById('speech-word-index').innerText = `Word ${currentSpeechIndex + 1} of ${filteredVocab.length}`;
+            
+            document.getElementById('speech-feedback-box').classList.add('hidden');
+        }
+
+        function nextSpeechWord() {
+            if (filteredVocab.length === 0) return;
+            currentSpeechIndex = (currentSpeechIndex + 1) % filteredVocab.length;
+            updateSpeechLabUI();
+        }
+
+        function prevSpeechWord() {
+            if (filteredVocab.length === 0) return;
+            currentSpeechIndex = (currentSpeechIndex - 1 + filteredVocab.length) % filteredVocab.length;
+            updateSpeechLabUI();
+        }
+
+        /* ==========================================================================
+           MATCHING GAME LOGIC
+           ========================================================================== */
+        function startMatchingGame() {
+            matchMoves = 0;
+            matchMatches = 0;
+            selectedTileOne = null;
+            selectedTileTwo = null;
+            
+            document.getElementById('match-moves').innerText = matchMoves;
+            document.getElementById('match-score').innerText = matchMatches;
+
+            const pool = filteredVocab.length >= 6 ? filteredVocab : vocabList;
+            const sample = [...pool].sort(() => 0.5 - Math.random()).slice(0, 6);
+            
+            let cards = [];
+            sample.forEach(item => {
+                cards.push({ id: item.id, type: 'WORD', content: item.word, pos: item.pos });
+                cards.push({ id: item.id, type: 'MEANING', content: item.chinese, pos: item.pos });
+            });
+
+            cards.sort(() => 0.5 - Math.random());
+            matchTiles = cards;
+
+            const grid = document.getElementById('match-grid');
+            grid.innerHTML = cards.map((tile, idx) => `
+                <div onclick="handleTileClick(${idx})" id="tile-${idx}" class="match-tile cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-sm transition transform hover:-translate-y-0.5 select-none">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${tile.type === 'WORD' ? 'Word' : 'Chinese'}</span>
+                    <p class="font-bold text-xs sm:text-sm text-slate-800 my-auto">${tile.content}</p>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">${tile.pos}</span>
+                </div>
+            `).join('');
+        }
+
+        function handleTileClick(index) {
+            const tileEl = document.getElementById(`tile-${index}`);
+            const tileData = matchTiles[index];
+
+            if (tileEl.classList.contains('bg-emerald-50') || selectedTileOne?.index === index) return;
+
+            if (!selectedTileOne) {
+                selectedTileOne = { index, data: tileData };
+                tileEl.className = "match-tile cursor-pointer bg-indigo-50 border-2 border-indigo-600 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-md select-none";
+                return;
+            }
+
+            selectedTileTwo = { index, data: tileData };
+            tileEl.className = "match-tile cursor-pointer bg-indigo-50 border-2 border-indigo-600 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-md select-none";
+
+            matchMoves++;
+            document.getElementById('match-moves').innerText = matchMoves;
+
+            if (selectedTileOne.data.id === selectedTileTwo.data.id && selectedTileOne.data.type !== selectedTileTwo.data.type) {
+                matchMatches++;
+                document.getElementById('match-score').innerText = matchMatches;
+
+                const idx1 = selectedTileOne.index;
+                const idx2 = selectedTileTwo.index;
+
+                document.getElementById(`tile-${idx1}`).className = "match-tile bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-sm select-none opacity-80 pointer-events-none";
+                document.getElementById(`tile-${idx2}`).className = "match-tile bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-sm select-none opacity-80 pointer-events-none";
+
+                selectedTileOne = null;
+                selectedTileTwo = null;
+
+                if (matchMatches === 6) {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+            } else {
+                setTimeout(() => {
+                    if (selectedTileOne) {
+                        document.getElementById(`tile-${selectedTileOne.index}`).className = "match-tile cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-sm select-none";
+                    }
+                    if (selectedTileTwo) {
+                        document.getElementById(`tile-${selectedTileTwo.index}`).className = "match-tile cursor-pointer bg-white border-2 border-slate-200 hover:border-indigo-400 p-4 rounded-xl min-h-[100px] flex flex-col justify-between items-center text-center shadow-sm select-none";
+                    }
+                    selectedTileOne = null;
+                    selectedTileTwo = null;
+                }, 800);
+            }
+        }
+
+        /* ==========================================================================
+           FULL TABLE DIRECTORY
+           ========================================================================== */
+        function renderTable() {
+            const tbody = document.getElementById('vocab-table-body');
+            if (filteredVocab.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-400">No vocabulary items match your current filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredVocab.map((item, idx) => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-4 font-bold text-slate-400">${idx + 1}</td>
+                    <td class="py-3 px-4 font-bold text-slate-900">${item.word}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getPOSBadgeStyle(item.pos)}">
+                            ${item.pos}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-indigo-600">${item.phonetic || ''}</td>
+                    <td class="py-3 px-4 font-bold text-amber-700">${item.chinese || ''}</td>
+                    <td class="py-3 px-4 max-w-xs truncate text-slate-600">${item.meaning}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="speakWord('${item.word}')" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Listen">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.mastered ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+                            ${item.mastered ? '✓ Mastered' : 'Practice'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function getPOSBadgeStyle(pos) {
+            switch(pos) {
+                case 'Noun': return 'bg-blue-100 text-blue-700';
+                case 'Adjective': return 'bg-purple-100 text-purple-700';
+                case 'Verb': return 'bg-emerald-100 text-emerald-700';
+                case 'Adverb': return 'bg-amber-100 text-amber-700';
+                default: return 'bg-slate-100 text-slate-700';
+            }
+        }
+
+        function exportWordListJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vocabList, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "VE2B_Vocab_List_1_Full.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    </script>
+</body>
+</html>
